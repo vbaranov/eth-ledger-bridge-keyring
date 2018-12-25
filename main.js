@@ -7,4 +7,4 @@ import LedgerBridge from './ledger-bridge'
     //const res = await bridge.unlock('ledger-unlock-account', `44'/60'/0'`)
     //console.log('res', res)
 })()
-console.log('MetaMask < = > Ledger Bridge initialized!')
+console.log('Nifty Wallet < = > Ledger Bridge initialized!')
