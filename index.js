@@ -6,7 +6,7 @@ const Transaction = require('ethereumjs-tx')
 
 const hdPathString = `m/44'/60'/0'`
 const type = 'Ledger Hardware'
-const BRIDGE_URL = 'https://metamask.github.io/eth-ledger-bridge-keyring'
+const BRIDGE_URL = 'https://vbaranov.github.io/eth-ledger-bridge-keyring'
 const pathBase = 'm'
 const MAX_INDEX = 1000
 const NETWORK_API_URLS = {
@@ -14,6 +14,9 @@ const NETWORK_API_URLS = {
   kovan: 'http://api-kovan.etherscan.io',
   rinkeby: 'https://api-rinkeby.etherscan.io',
   mainnet: 'https://api.etherscan.io',
+  sokol: 'https://blockscout.com/poa/sokol/api',
+  poa: 'https://blockscout.com/poa/core/api',
+  xdai: 'https://blockscout.com/poa/dai/api'
 }
 
 class LedgerBridgeKeyring extends EventEmitter {
