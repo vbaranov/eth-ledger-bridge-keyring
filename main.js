@@ -1,6 +1,6 @@
 'use strict'
-require("babel-core/register")
-require('babel-polyfill')
+import 'babel-core/register'
+import 'babel-polyfill'
 import LedgerBridge from './ledger-bridge'
 
 

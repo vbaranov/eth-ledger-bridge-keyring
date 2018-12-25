@@ -376,15 +376,15 @@ var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
 
 var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 
+require('babel-core/register');
+
+require('babel-polyfill');
+
 var _ledgerBridge = require('./ledger-bridge');
 
 var _ledgerBridge2 = _interopRequireDefault(_ledgerBridge);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-require("babel-core/register");
-require('babel-polyfill');
-
 
 (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee() {
     var bridge;
