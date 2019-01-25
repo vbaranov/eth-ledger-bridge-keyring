@@ -245,13 +245,16 @@ class LedgerBridgeKeyring extends EventEmitter {
   }
 
   forgetDevice (clearAccounts) {
+    let accountsToForget = []
     if (clearAccounts) {
+      accountsToForget = this.accounts
       this.accounts = []
     }
     this.page = 0
     this.unlockedAccount = 0
     this.paths = {}
     this.hdk = new HDKey()
+    return accountsToForget
   }
 
   /* PRIVATE METHODS */
