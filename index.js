@@ -2,7 +2,6 @@ const {EventEmitter} = require('events')
 const HDKey = require('hdkey')
 const ethUtil = require('ethereumjs-util')
 const sigUtil = require('eth-sig-util')
-const Transaction = require('ethereumjs-tx')
 
 const hdPathString = `m/44'/60'/0'`
 const type = 'Ledger Hardware'
@@ -167,6 +166,7 @@ class LedgerBridgeKeyring extends EventEmitter {
             params: {
               tx: tx.serialize().toString('hex'),
               hdPath,
+              to: ethUtil.bufferToHex(tx.to).toLowerCase()
             },
           },
           ({success, payload}) => {
@@ -180,10 +180,10 @@ class LedgerBridgeKeyring extends EventEmitter {
               if (valid) {
                 resolve(tx)
               } else {
-                reject('The transaction signature is not valid')
+                reject(new Error('Ledger: The transaction signature is not valid'))
               }
             } else {
-              reject(payload)
+              reject(new Error(payload.error || 'Ledger: Unknown error while signing transaction'))
             }
           })
       })
@@ -191,13 +191,11 @@ class LedgerBridgeKeyring extends EventEmitter {
   }
 
   signMessage (withAccount, data) {
-    throw new Error('Not supported on this device')
+    return this.signPersonalMessage(withAccount, data);
   }
 
   // For personal_sign, we need to prefix the message:
   signPersonalMessage (withAccount, message) {
-    const humanReadableMsg = this._toAscii(message)
-    const bufferMsg = Buffer.from(humanReadableMsg).toString('hex')
     return new Promise((resolve, reject) => {
       this.unlock()
         .then(_ => {
@@ -212,7 +210,7 @@ class LedgerBridgeKeyring extends EventEmitter {
             action: 'ledger-sign-personal-message',
             params: {
               hdPath,
-              message: bufferMsg,
+              message: ethUtil.stripHexPrefix(message),
             },
           },
           ({success, payload}) => {
@@ -225,11 +223,11 @@ class LedgerBridgeKeyring extends EventEmitter {
               const signature = `0x${payload['r']}${payload['s']}${v}`
               const addressSignedWith = sigUtil.recoverPersonalSignature({data: message, sig: signature})
               if (ethUtil.toChecksumAddress(addressSignedWith) !== ethUtil.toChecksumAddress(withAccount)) {
-                reject('signature doesnt match the right address')
+                reject(new Error('Ledger: The signature doesnt match the right address'))
               }
               resolve(signature)
             } else {
-              reject(payload)
+              reject(new Error(payload.error || 'Ledger: Uknown error while signing message'))
             }
           })
       })
@@ -299,9 +297,6 @@ class LedgerBridgeKeyring extends EventEmitter {
             accounts = this._getAccountsLegacy(from, to)
           }
           resolve(accounts)
-        })
-        .catch(e => {
-          reject(e)
         })
     })
   }
