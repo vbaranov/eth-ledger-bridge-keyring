@@ -2,7 +2,6 @@ const {EventEmitter} = require('events')
 const HDKey = require('hdkey')
 const ethUtil = require('ethereumjs-util')
 const sigUtil = require('eth-sig-util')
-const Transaction = require('ethereumjs-tx')
 
 const hdPathString = `m/44'/60'/0'`
 const type = 'Ledger Hardware'
@@ -16,7 +15,7 @@ const NETWORK_API_URLS = {
   mainnet: 'https://api.etherscan.io',
   sokol: 'https://blockscout.com/poa/sokol/api',
   poa: 'https://blockscout.com/poa/core/api',
-  xdai: 'https://blockscout.com/poa/dai/api'
+  xdai: 'https://blockscout.com/poa/dai/api',
 }
 
 class LedgerBridgeKeyring extends EventEmitter {
@@ -98,7 +97,7 @@ class LedgerBridgeKeyring extends EventEmitter {
         .then(async _ => {
           const from = this.unlockedAccount
           const to = from + n
-          //do not clear previous accounts on adding
+          // do not clear previous accounts on adding
           // this.accounts = []
           for (let i = from; i < to; i++) {
             let address
@@ -191,19 +190,21 @@ class LedgerBridgeKeyring extends EventEmitter {
   }
 
   signMessage (withAccount, data) {
-    throw new Error('Not supported on this device')
+    return this.signPersonalMessage(withAccount, data)
   }
 
   // For personal_sign, we need to prefix the message:
   signPersonalMessage (withAccount, message) {
-    const humanReadableMsg = this._toAscii(message)
-    const bufferMsg = Buffer.from(humanReadableMsg).toString('hex')
     return new Promise((resolve, reject) => {
       this.unlock()
-        .then(_ => {
+        .then((_) => {
           let hdPath
           if (this._isBIP44()) {
-            hdPath = this._getPathForIndex(this.unlockedAccount)
+            const checksummedAddress = ethUtil.toChecksumAddress(withAccount)
+            if (!Object.keys(this.accountIndexes).includes(checksummedAddress)) {
+              reject(new Error(`Ledger: Index for address '${checksummedAddress}' not found`))
+            }
+            hdPath = this._getPathForIndex(this.accountIndexes[checksummedAddress])
           } else {
             hdPath = this._toLedgerPath(this._pathFromAddress(withAccount))
           }
@@ -212,27 +213,27 @@ class LedgerBridgeKeyring extends EventEmitter {
             action: 'ledger-sign-personal-message',
             params: {
               hdPath,
-              message: bufferMsg,
+              message: ethUtil.stripHexPrefix(message),
             },
           },
-          ({success, payload}) => {
+          ({ success, payload }) => {
             if (success) {
-              let v = payload['v'] - 27
+              let v = payload.v - 27
               v = v.toString(16)
               if (v.length < 2) {
                 v = `0${v}`
               }
-              const signature = `0x${payload['r']}${payload['s']}${v}`
-              const addressSignedWith = sigUtil.recoverPersonalSignature({data: message, sig: signature})
+              const signature = `0x${payload.r}${payload.s}${v}`
+              const addressSignedWith = sigUtil.recoverPersonalSignature({ data: message, sig: signature })
               if (ethUtil.toChecksumAddress(addressSignedWith) !== ethUtil.toChecksumAddress(withAccount)) {
-                reject('signature doesnt match the right address')
+                reject(new Error('Ledger: The signature doesnt match the right address'))
               }
               resolve(signature)
             } else {
-              reject(payload)
+              reject(new Error(payload.error || 'Ledger: Uknown error while signing message'))
             }
           })
-      })
+        })
     })
   }
 
